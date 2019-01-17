@@ -13,12 +13,13 @@ from numpy import sqrt, cos, sin, log
 # todo add separate functions that accept additional arguments, like ddof.
 
 
-# Note: '@numba.jit" is used instead of '@jit' when creating an array within the
+# Note: '@numba.jit" is used instead of '@njit' when creating an array within the
 # func.  nopython seems to not like np.empty.
 jit = numba.jit(nopython=True)
+njit = numba.njit
+prange = numba.prange
 
-
-@jit
+@njit
 def sum_(data: np.ndarray):
     """Similar to numpy.sum."""
     sum__ = 0.
@@ -27,14 +28,14 @@ def sum_(data: np.ndarray):
     return sum__
 
 
-@jit
+@njit
 def mean(data: np.ndarray):
     """Similar to numpy.mean."""
     sum__ = sum_(data)
     return sum__ / data.size
 
 
-@jit
+@njit
 def var(data: np.ndarray):
     """Variance test, similar to numpy.var for a one-axis array."""
     M = data.size
@@ -54,7 +55,7 @@ def var(data: np.ndarray):
     return (sum_sq - sum__**2 / (i+1 - ddof)) / (i+1 - ddof)
 
 
-@jit
+@njit
 def cov(m: np.ndarray, y):
     """Covariance estimation, similar to numpy.cov. Returns only the covariance
     result as a float, instead of a 2x2 array."""
@@ -71,13 +72,13 @@ def cov(m: np.ndarray, y):
     return sum_sq / (M - ddof)
 
 
-@jit
+@njit
 def std(data: np.ndarray):
     """Standard deviation, similar to numpy.std."""
     return var(data) ** .5
 
 
-@jit
+@njit
 def corr(x: np.ndarray, y: np.ndarray):
     """Pearson correlation test, similar to scipy.stats.pearsonr."""
     M = x.size
@@ -105,7 +106,7 @@ def corr(x: np.ndarray, y: np.ndarray):
     return (cross_mean - mean1 * mean2) / (std1 * std2)
 
 
-@jit
+@njit
 def bisect(a: np.ndarray, x):
     """Similar to bisect.bisect() or bisect.bisect_right(), from the built-in library."""
     M = a.size
@@ -115,7 +116,7 @@ def bisect(a: np.ndarray, x):
     return M
 
 
-@jit
+@njit
 def bisect_left(a: np.ndarray, x):
     """Similar to bisect.bisect_left(), from the built-in library."""
     M = a.size
@@ -133,7 +134,7 @@ def interp(x: np.ndarray, xp: np.ndarray, fp: np.ndarray):
     """Similar to numpy.interp, if x is an array."""
     M = x.size
 
-    result = np.empty(M, dtype=np.float)
+    result = np.empty(M, dtype=np.float64)
     for i in range(M):
         i_r = bisect(xp, x[i])
 
@@ -152,7 +153,7 @@ def interp(x: np.ndarray, xp: np.ndarray, fp: np.ndarray):
     return result
 
 
-@jit
+@njit
 def interp_one(x: np.ndarray, xp: np.ndarray, fp: np.ndarray):
     """Similar to numpy.interp, if x is a single value."""
     i = bisect(xp, x)
@@ -173,7 +174,7 @@ def interp_one(x: np.ndarray, xp: np.ndarray, fp: np.ndarray):
 def detrend(data: np.ndarray, type_: str):
     """Similar to scipiy.signal.detrend. Currently for 1d arrays only."""
     M = data.size
-    result = np.empty(M, dtype=np.float)
+    result = np.empty(M, dtype=np.float64)
 
     if type_ == 'constant' or type_ == 'c':
         mean_ = mean(data)
@@ -194,7 +195,7 @@ def detrend(data: np.ndarray, type_: str):
 # todo consider a least absolute deviations (lad) function.
 
 
-@jit
+@njit
 def ols(x: np.ndarray, y: np.ndarray):
     """Simple OLS for two data sets."""
     M = x.size
@@ -226,7 +227,7 @@ def ols_single(y: np.ndarray):
 @numba.jit
 def lin_resids(x: np.ndarray, y: np.ndarray, slope: float, intercept: float):
     M = x.size
-    result = np.empty(M, dtype=np.float)
+    result = np.empty(M, dtype=np.float64)
 
     for i in range(M):
         result[i] = y[i] - (slope * x[i] + intercept)
@@ -237,7 +238,7 @@ def lin_resids(x: np.ndarray, y: np.ndarray, slope: float, intercept: float):
 @numba.jit
 def lin_resids_single(y: np.ndarray, slope: float, intercept: float):
     M = y.size
-    result = np.empty(M, dtype=np.float)
+    result = np.empty(M, dtype=np.float64)
 
     for i in range(M):
         result[i] = y[i] - (slope * i + intercept)
@@ -245,7 +246,7 @@ def lin_resids_single(y: np.ndarray, slope: float, intercept: float):
     return result
 
 
-@jit
+@njit
 def vdot(a: np.ndarray, b: np.ndarray):  # todo slower than numpy for large arrays
     """Take the dot product of two vectors.  Similar to np.vdot.
     a and b must have shape (n,)"""
@@ -258,7 +259,7 @@ def vdot(a: np.ndarray, b: np.ndarray):  # todo slower than numpy for large arra
     return result
 
 
-@jit
+@njit
 def add_elwise(a: Iterable, b: Iterable):
     """Add two iterables element-wise."""
     result = []
@@ -267,7 +268,7 @@ def add_elwise(a: Iterable, b: Iterable):
     return result
 
 
-@jit
+@njit
 def sub_elwise(a: Iterable, b: Iterable):
     """Subtract the second iterable from the first, element-wise."""
     result = []
@@ -276,7 +277,7 @@ def sub_elwise(a: Iterable, b: Iterable):
     return result
 
 
-@jit
+@njit
 def div_elwise(items: Iterable, value: float):
     """Divide all values in an iterable by a constant"""
     result = []
@@ -285,7 +286,7 @@ def div_elwise(items: Iterable, value: float):
     return result
 
 
-@jit
+@njit
 def mult_elwise(items: Iterable, value: float):
     """Multiply all values in an iterable by a constant."""
     result = []
@@ -358,7 +359,7 @@ QQ = np.array([
 
 
 
-@jit
+@njit
 def polevl(x, coef):
     """Taken from http://numba.pydata.org/numba-doc/0.12.2/examples.html"""
     N = len(coef)
@@ -370,7 +371,7 @@ def polevl(x, coef):
     return ans
 
 
-@jit
+@njit
 def p1evl(x, coef):
     """Taken from http://numba.pydata.org/numba-doc/0.12.2/examples.html"""
     N = len(coef)
@@ -382,7 +383,7 @@ def p1evl(x, coef):
     return ans
 
 
-@jit
+@njit
 def j0(x):
     """Taken from http://numba.pydata.org/numba-doc/0.12.2/examples.html"""
     # Seems slower than scipy.special.j0 (Which it's a reimplentation of), but
@@ -446,7 +447,7 @@ def j0(x):
 
 
 # Undocumented; reduced accuracy is probably not worth it.
-@jit
+@njit
 def cov_fast(m, y):
     """Faster covariance function that doesn't need pre-calculate mean. May
     be less accurate."""
@@ -480,7 +481,7 @@ def dot(x, y):
     size1 = x.shape[0]
     size2 = y.shape[1]
 
-    result = np.zeros((size1, size2), dtype=np.float)
+    result = np.zeros((size1, size2), dtype=np.float64)
 
     for i1 in range(size1):
         for i2 in range(size2):
@@ -553,7 +554,7 @@ def flatten(data):
     shape = data.shape
     ndim = data.ndim
 
-    result = np.empty(data.size, dtype=np.float)
+    result = np.empty(data.size, dtype=np.float64)
     count = 0
 
 
@@ -578,7 +579,7 @@ def flatten(data):
 def remove_axis_r(data):
     shape = data.shape
 
-    result = np.empty(tuple(chain(shape[:-2], (shape[-1] * shape[-2],))), dtype=np.float)
+    result = np.empty(tuple(chain(shape[:-2], (shape[-1] * shape[-2],))), dtype=np.float64)
 
     for i in range(shape[0]):
         print(i, shape[1])
@@ -592,7 +593,7 @@ def remove_axis_r(data):
 def remove_axis_l(data):
     shape = data.shape
 
-    result = np.empty(tuple(chain((shape[0] * shape[1],), shape[2:])), dtype=np.float)
+    result = np.empty(tuple(chain((shape[0] * shape[1],), shape[2:])), dtype=np.float64)
 
     for i in range(shape[0]):
         start = 0
@@ -611,7 +612,7 @@ def remove_axis_l(data):
 def flatten_3d(data):
     shape = data.shape
 
-    result = np.empty(data.size, dtype=np.float)
+    result = np.empty(data.size, dtype=np.float64)
 
     result_i = 0
 
@@ -638,7 +639,7 @@ def flatten_3d(data):
 #         if i != axis:
 #             new_shape.append(shape[i])
 #
-#     result = np.empty(new_shape, dtype=np.float)
+#     result = np.empty(new_shape, dtype=np.float64)
 #
 #     sum__ = 0.
 #     for j in range(len(shape) - 1):
